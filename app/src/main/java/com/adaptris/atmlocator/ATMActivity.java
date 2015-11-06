@@ -48,13 +48,7 @@ public class ATMActivity extends AppCompatActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        CameraUpdate update = CameraUpdateFactory.newLatLng(sydney);
-
-        mMap.moveCamera(update);
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(10));
+        refreshMap();
 
 
     }
@@ -79,24 +73,38 @@ public class ATMActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
-            mMap.clear();
-            try {
-                DbHelper dbHelper = new DbHelper(this);
-                Dao<AtmPlace, Integer> atmPlacesDao = dbHelper.getDao(AtmPlace.class);
 
-                List<AtmPlace> atmPlaces = atmPlacesDao.queryForAll();
-                for (AtmPlace place : atmPlaces) {
-                    MarkerOptions markerOptions = new MarkerOptions();
-                    LatLng latLng = new LatLng(place.lat, place.lng);
-
-                    markerOptions.position(latLng).title(place.name);
-                    markerOptions.snippet(place.bank.phone);
-                    mMap.addMarker(markerOptions);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            refreshMap();
 
         }
+    }
+
+    private void refreshMap() {
+        mMap.clear();
+        try {
+            DbHelper dbHelper = new DbHelper(this);
+            Dao<AtmPlace, Integer> atmPlacesDao = dbHelper.getDao(AtmPlace.class);
+
+            List<AtmPlace> atmPlaces = atmPlacesDao.queryForAll();
+            for (AtmPlace place : atmPlaces) {
+                MarkerOptions markerOptions = new MarkerOptions();
+                LatLng latLng = new LatLng(place.lat, place.lng);
+
+                markerOptions.position(latLng).title(place.name);
+                markerOptions.snippet(place.bank.phone);
+                mMap.addMarker(markerOptions);
+
+                CameraUpdate update = CameraUpdateFactory.newLatLng(latLng);
+                mMap.moveCamera(update);
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(10));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+
+
     }
 }
