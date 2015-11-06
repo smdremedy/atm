@@ -6,8 +6,11 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,10 +24,15 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlacePicker;
+import com.j256.ormlite.dao.Dao;
+
+import java.sql.SQLException;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnItemSelected;
 
 public class AddATMActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -43,9 +51,16 @@ public class AddATMActivity extends AppCompatActivity implements
     TextView placeAddressTextView;
     @Bind(R.id.placeLatLongTextView)
     TextView placeLatLongTextView;
+    @Bind(R.id.bankSpinner)
+    Spinner bankSpinner;
+    @Bind(R.id.saveAtmButton)
+    Button saveAtmButton;
+
     private GoogleApiClient googleApiClient;
     private LocationRequest locationRequest;
-    private AtmPlace atmPlace;
+    private AtmPlace atmPlace = new AtmPlace();
+    private Dao<Bank, String> bankDao;
+    private DbHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,8 +68,23 @@ public class AddATMActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_add_atm);
         ButterKnife.bind(this);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
-        adapter.addAll("ING BANK", "Milenium", "PKO BP", "Alior", "Krzak", "mBank", "ING Nederlanden");
+        ArrayAdapter<Bank> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+
+        dbHelper = new DbHelper(this);
+        try {
+            bankDao = dbHelper.getDao(Bank.class);
+            List<Bank> banks = bankDao.queryForAll();
+
+
+            adapter.addAll(banks);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+
+        bankSpinner.setAdapter(adapter);
+
 
         googleApiClient = new GoogleApiClient.Builder(getApplicationContext())
                 .addApi(LocationServices.API)
@@ -91,6 +121,26 @@ public class AddATMActivity extends AppCompatActivity implements
         }
 
 
+    }
+
+    @OnClick(R.id.saveAtmButton)
+    public void saveAtm() {
+
+        try {
+            Dao<AtmPlace, Integer> dao = dbHelper.getDao(AtmPlace.class);
+            dao.create(atmPlace);
+            setResult(RESULT_OK);
+            finish();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    @OnItemSelected(R.id.bankSpinner)
+    public void bankSelected(int position) {
+        atmPlace.bank = (Bank) bankSpinner.getItemAtPosition(position);
     }
 
     @Override
@@ -131,14 +181,13 @@ public class AddATMActivity extends AppCompatActivity implements
         if (requestCode == REQUEST_PLACE_PICKER && resultCode == RESULT_OK) {
             Place place = PlacePicker.getPlace(data, this);
 
-            atmPlace = new AtmPlace();
+
             atmPlace.name = place.getName().toString();
             atmPlace.address = place.getAddress().toString();
             atmPlace.lat = place.getLatLng().latitude;
             atmPlace.lng = place.getLatLng().longitude;
 
             showAtmPlace();
-
 
 
         }

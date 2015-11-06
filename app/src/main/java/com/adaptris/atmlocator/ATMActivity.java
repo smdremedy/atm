@@ -14,9 +14,14 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.j256.ormlite.dao.Dao;
+
+import java.sql.SQLException;
+import java.util.List;
 
 public class ATMActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    public static final int REQUEST_CODE = 123;
     private GoogleMap mMap;
 
     @Override
@@ -64,9 +69,34 @@ public class ATMActivity extends AppCompatActivity implements OnMapReadyCallback
     public boolean onOptionsItemSelected(MenuItem item) {
         if(item.getItemId() == R.id.action_add_atm) {
             Intent intent = new Intent(this, AddATMActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE);
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+            mMap.clear();
+            try {
+                DbHelper dbHelper = new DbHelper(this);
+                Dao<AtmPlace, Integer> atmPlacesDao = dbHelper.getDao(AtmPlace.class);
+
+                List<AtmPlace> atmPlaces = atmPlacesDao.queryForAll();
+                for (AtmPlace place : atmPlaces) {
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    LatLng latLng = new LatLng(place.lat, place.lng);
+
+                    markerOptions.position(latLng).title(place.name);
+                    markerOptions.snippet(place.bank.phone);
+                    mMap.addMarker(markerOptions);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 }

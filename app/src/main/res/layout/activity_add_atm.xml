@@ -14,6 +14,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <Spinner
+        android:id="@+id/bankSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
     <TextView
         android:id="@+id/placeNameTextView"
         android:layout_width="match_parent"
@@ -30,6 +35,11 @@
         android:layout_height="wrap_content" />
 
 
+    <Button
+        android:id="@+id/saveAtmButton"
+        android:text="Save ATM"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 
 </LinearLayout>
